@@ -1,0 +1,215 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+  <title>معرض الصور</title>
+
+  <style>
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      font-family: Arial, sans-serif;
+      background: #111;
+      color: white;
+    }
+
+    header {
+      text-align: center;
+      padding: 25px 15px;
+      background: #1c1c1c;
+    }
+
+    header h1 {
+      margin: 0;
+      font-size: 26px;
+    }
+
+    header p {
+      margin: 8px 0 0;
+      color: #aaa;
+      font-size: 14px;
+    }
+
+    #gallery {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 8px;
+      padding: 10px;
+      max-width: 1000px;
+      margin: auto;
+    }
+
+    .photo {
+      width: 100%;
+      aspect-ratio: 1 / 1;
+      object-fit: cover;
+      border-radius: 8px;
+      cursor: pointer;
+      background: #222;
+      transition: transform 0.2s;
+    }
+
+    .photo:active {
+      transform: scale(0.97);
+    }
+
+    #loading {
+      text-align: center;
+      padding: 40px;
+      color: #aaa;
+    }
+
+    #error {
+      text-align: center;
+      padding: 30px;
+      color: #ff7777;
+      display: none;
+    }
+
+    /* شاشة الصورة الكبيرة */
+    #viewer {
+      display: none;
+      position: fixed;
+      z-index: 9999;
+      inset: 0;
+      background: rgba(0,0,0,0.95);
+      align-items: center;
+      justify-content: center;
+    }
+
+    #viewer img {
+      max-width: 95%;
+      max-height: 90%;
+      object-fit: contain;
+    }
+
+    #close {
+      position: absolute;
+      top: 15px;
+      left: 20px;
+      font-size: 35px;
+      color: white;
+      cursor: pointer;
+    }
+
+    @media (min-width: 700px) {
+      #gallery {
+        grid-template-columns: repeat(3, 1fr);
+        gap: 12px;
+        padding: 20px;
+      }
+    }
+  </style>
+</head>
+
+<body>
+
+  <header>
+    <h1>معرض الصور</h1>
+    <p>جميع الصور</p>
+  </header>
+
+  <div id="loading">
+    جارٍ تحميل الصور...
+  </div>
+
+  <div id="gallery"></div>
+
+  <div id="error">
+    حدث خطأ أثناء تحميل الصور.
+  </div>
+
+  <div id="viewer">
+    <span id="close">×</span>
+    <img id="bigImage" src="" alt="صورة">
+  </div>
+
+  <script>
+
+    const owner = "sufaraalkalima-dotcom";
+    const repo = "Image-";
+
+    const gallery = document.getElementById("gallery");
+    const loading = document.getElementById("loading");
+    const error = document.getElementById("error");
+
+    async function loadImages() {
+
+      try {
+
+        const response = await fetch(
+          `https://api.github.com/repos/${owner}/${repo}/contents/`
+        );
+
+        if (!response.ok) {
+          throw new Error("GitHub API error");
+        }
+
+        const files = await response.json();
+
+        const images = files.filter(file =>
+          file.type === "file" &&
+          /\.(jpg|jpeg|png|webp|gif)$/i.test(file.name)
+        );
+
+        if (images.length === 0) {
+          loading.style.display = "none";
+          error.style.display = "block";
+          error.textContent = "لم يتم العثور على صور.";
+          return;
+        }
+
+        images.forEach(file => {
+
+          const img = document.createElement("img");
+
+          img.className = "photo";
+          img.src = file.download_url;
+          img.alt = file.name;
+          img.loading = "lazy";
+
+          img.onclick = function() {
+            document.getElementById("bigImage").src = file.download_url;
+            document.getElementById("viewer").style.display = "flex";
+          };
+
+          gallery.appendChild(img);
+
+        });
+
+        loading.style.display = "none";
+
+      } catch (err) {
+
+        console.error(err);
+
+        loading.style.display = "none";
+        error.style.display = "block";
+
+      }
+
+    }
+
+    loadImages();
+
+    document.getElementById("close").onclick = function() {
+      document.getElementById("viewer").style.display = "none";
+      document.getElementById("bigImage").src = "";
+    };
+
+    document.getElementById("viewer").onclick = function(e) {
+      if (e.target.id === "viewer") {
+        document.getElementById("viewer").style.display = "none";
+        document.getElementById("bigImage").src = "";
+      }
+    };
+
+  </script>
+
+</body>
+</html>
